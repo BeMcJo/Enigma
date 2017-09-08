@@ -1,0 +1,31 @@
+#!/bin/bash
+# Usage: bash test-error.py F1 F2 ...
+#     Runs each file F through java enigma.Main and checks that it returns
+#     a non-zero exit code and produces no exception backtrace.
+#     Briefly reports results.  Exits normally if all tests pass, and
+#     otherwise exits with code 1.
+
+code=0
+rm -rf ERRS.txt
+
+for f in "$@"; do
+    echo -n "$f: ";
+    d="$(dirname "$f")"
+    b="$d/$(basename "$f" .inp)"
+    if [ -f "$b.conf" ]; then
+        config="$b.conf"
+    else
+        config="$d/default.conf"
+    fi
+    if (ulimit -t 5; ulimit -f 100;
+        java -ea enigma.Main  "$f" > /dev/null 2> ERRS.txt); then
+	code=1; echo "ERROR (did not report error)";
+    elif grep '^Exception in thread "main"' ERRS.txt >/dev/null; then
+	code=1; echo "ERROR (uncaught exception)";
+    else
+	echo OK;
+    fi;
+    rm -rf ERRS.txt;
+done;
+
+exit $code
